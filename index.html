@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Joke Generator</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      max-width: 500px;
+      width: 100%;
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+    }
+
+    .joke-box {
+      background: #f5f7fa;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: #444;
+      line-height: 1.5;
+      transition: all 0.3s ease;
+    }
+
+    .joke-box.loading {
+      opacity: 0.6;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      font-size: 1rem;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      margin: 5px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .copy-btn {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+    }
+
+    .error {
+      color: #e74c3c;
+      font-size: 0.95rem;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 20px;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .joke-box {
+        font-size: 1rem;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>😂 Joke Generator</h1>
+
+    <div class="joke-box" id="jokeDisplay">
+      Click "Get New Joke" to start!
+    </div>
+
+    <button onclick="getJoke()">Get New Joke</button>
+    <button class="copy-btn" onclick="copyJoke()">Copy Joke</button>
+
+    <p class="error" id="errorMsg"></p>
+  </div>
+
+  <script>
+    const jokeDisplay = document.getElementById('jokeDisplay');
+    const errorMsg = document.getElementById('errorMsg');
+
+    // Using JokeAPI v2 - safe for work jokes only
+    const API_URL = 'https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single';
+
+    let currentJoke = '';
+
+    async function getJoke() {
+      jokeDisplay.classList.add('loading');
+      jokeDisplay.textContent = 'Loading joke...';
+      errorMsg.textContent = '';
+
+      try {
+        const response = await fetch(API_URL);
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch joke');
+        }
+
+        const data = await response.json();
+
+        // Handle both single and two-part jokes
+        if (data.type === 'single') {
+          currentJoke = data.joke;
+        } else if (data.type === 'twopart') {
+          currentJoke = `${data.setup} ... ${data.delivery}`;
+        } else {
+          currentJoke = data.joke || 'No joke available';
+        }
+
+        jokeDisplay.textContent = currentJoke;
+
+      } catch (error) {
+        console.error('Error:', error);
+        jokeDisplay.textContent = 'Oops! Could not load joke. Try again.';
+        errorMsg.textContent = 'Error: ' + error.message;
+      } finally {
+        jokeDisplay.classList.remove('loading');
+      }
+    }
+
+    function copyJoke() {
+      if (!currentJoke) {
+        errorMsg.textContent = 'No joke to copy yet!';
+        return;
+      }
+
+      navigator.clipboard.writeText(currentJoke)
+        .then(() => {
+          errorMsg.textContent = '✓ Joke copied to clipboard!';
+          setTimeout(() => {
+            errorMsg.textContent = '';
+          }, 3000);
+        })
+        .catch(err => {
+          errorMsg.textContent = 'Failed to copy joke';
+          console.error('Copy error:', err);
+        });
+    }
+
+    // Load a joke on page load
+    window.addEventListener('DOMContentLoaded', getJoke);
+  </script>
+</body>
+</html>
